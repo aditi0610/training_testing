@@ -1,0 +1,589 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id                String    @id @default(cuid())
+  name              String
+  email             String    @unique
+  password          String
+  phone             String?
+  role              Role      @default(DOCTOR) // Can keep this as default, but it's optional if not used in registration
+  isActive          Boolean   @default(false)
+  DOB               DateTime? // Optional if not used in registration
+  address           String? // Optional if not used in registration
+  profilePictureUrl String?
+  resetToken        String?
+  resetTokenExpires DateTime?
+  createdOn         DateTime  @default(now())
+  updatedOn         DateTime  @updatedAt
+
+  // Relations
+  clinics      Clinic[]
+  appointments Appointment[]
+  treatments   Treatment[]   @relation("DoctorTreatments")
+  patients     Patient[]     @relation("DoctorPatients")
+  slots        Slot[]        @relation("UserSlots") 
+
+  @@map("USER")
+}
+
+model Clinic {
+  id          String   @id @default(cuid())
+  name        String?
+  userId      String
+  address     String
+  contact     String
+  fees        Float?
+  image       String?
+  isOwner     Boolean? @default(true)
+  openingTime String?
+  closeTime   String?
+  isActive    Boolean? @default(true)
+  recurringDays Json
+  createdOn   DateTime @default(now())
+  updatedOn   DateTime @updatedAt
+
+  // Relations
+  user              User               @relation(fields: [userId], references: [id])
+  slots             Slot[]
+  treatments        Treatment[]
+  appointments      Appointment[]
+  patients          Patient[]
+  educationalVideos EducationalVideo[]
+
+  @@map("CLINIC")
+}
+
+model Slot {
+  id           String        @id @default(cuid())
+  day          DayOfWeek
+  clinicId     String
+  userId       String
+  startTime    String
+  endTime      String
+  date         DateTime
+  status     Boolean        @default(false)
+  notes        String?
+  createdOn    DateTime      @default(now())
+  updatedOn    DateTime      @updatedAt
+  
+  clinic       Clinic        @relation(fields: [clinicId], references: [id])
+  user         User    @relation("UserSlots", fields: [userId], references: [id])  
+  appointments Appointment[]
+
+  @@index([date])
+  @@map("SLOT")
+}
+
+model Patient {
+  id                  String   @id @default(cuid())
+  uniqueCode          String   @unique               // Custom ID like PID00007
+  doctorId            String
+  clinicId            String                         
+  name                String
+  address             String
+  gender              String?
+  dob                 DateTime 
+  contact             String
+  email               String?
+  status              String?
+  treatmentChoice     String?
+  patientObservations Json?    //Store array of strings 
+  createdOn           DateTime @default(now())
+  updatedOn           DateTime @updatedAt
+
+  // Relations
+  doctor        User           @relation("DoctorPatients", fields: [doctorId], references: [id])
+  clinic        Clinic         @relation(fields: [clinicId], references: [id])
+  treatments    Treatment[] // Existing relation with Treatment
+  notifications Notification[] // Existing relation with Notification
+  treatmentPlans TreatmentPlan[] //  Existing relation with TreatmentPlan
+
+  @@map("PATIENTS")
+}
+
+model Treatment {
+  id        String @id @default(cuid())
+  doctorId  String
+  patientId String
+  clinicId  String
+
+  chiefComplaint String?
+
+  allergyId          String?
+  medicalConditionId String?
+
+  facialForm     FacialForm
+  facialSymmetry FacialSymmetry
+  lipPosture     LipPosture
+
+  facialProfile     FacialProfile
+  lipProtrusion     LipProtrusion
+  facialDivergence  FacialDivergence
+  nasolabialAngle   NasolabialAngle
+  noseSize          NoseSize
+  mentolabialSulcus MentolabialSulcus
+  chin              ChinType
+
+  oralHygieneStatus OralHygieneStatus
+  tongueSize        TongueSize
+  tonsils           TonsilCondition
+  frenum            FrenumType
+  overjet           String?
+  crossbite         CrossbiteStatus
+
+  vto           VTO
+  treatmentType TreatmentType
+
+  diagnosis          String?
+  treatmentObjective String?
+  preTreatmentPhotos PreTreatmentPhoto[]
+
+  createdOn DateTime @default(now())
+  updatedOn DateTime @updatedAt
+
+  patient             Patient               @relation(fields: [patientId], references: [id])
+  doctor              User                  @relation("DoctorTreatments", fields: [doctorId], references: [id])
+  allergy             Allergy?              @relation(fields: [allergyId], references: [id])
+  medicalCondition    MedicalCondition?     @relation(fields: [medicalConditionId], references: [id])
+  payments            Payment[]
+  documents           Document[]
+  Clinic              Clinic                @relation(fields: [clinicId], references: [id])
+  PatientPrescription PatientPrescription[]
+  TreatmentPlan       TreatmentPlan[]
+
+  @@map("TREATMENT")
+}
+
+model PreTreatmentPhoto {
+  id          String    @id @default(cuid())
+  url         String
+  treatment   Treatment @relation(fields: [treatmentId], references: [id], onDelete: Cascade)
+  treatmentId String
+
+  @@map("PRE_TREATMENT_PHOTO")
+}
+
+model Allergy {
+  id        String   @id @default(cuid())
+  name      String   @unique
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  treatments Treatment[] // reverse relation
+
+  @@map("ALLERGY")
+}
+
+model MedicalCondition {
+  id        String   @id @default(cuid())
+  name      String   @unique
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  treatments Treatment[] // reverse relation
+
+  @@map("MEDICAL_CONDITION")
+}
+
+model TreatmentPlan {
+  id          String            @id @default(cuid())
+  treatmentId String
+  patientId   String
+  type        TreatmentPlanType
+
+  alignerDetails AlignerDetail?
+  bracesDetails  BraceDetail?
+
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  treatment Treatment @relation(fields: [treatmentId], references: [id])
+  patient     Patient   @relation(fields: [patientId], references: [id])
+
+  @@map("TREATMENT_PLAN")
+}
+
+
+model AlignerDetail {
+  id                    String         @id @default(cuid())
+  treatmentPlanId       String         @unique
+  planName              String
+  daysToWearEachAligner Int
+  recommendedDailyHours Int
+  upperJawOptions       Json?
+  lowerJawOptions       Json?
+  finalAlignerTable     Json
+  prescriptions         Json
+  iprDetails             IprDetail[]
+
+  treatmentPlan TreatmentPlan @relation(fields: [treatmentPlanId], references: [id])
+
+  @@map("ALIGNER_DETAIL")
+}
+
+model IprDetail {
+  id              String        @id @default(cuid())
+  url             String        // URL or path to the uploaded IPR image
+  alignerDetail   AlignerDetail @relation(fields: [alignerDetailId], references: [id], onDelete: Cascade)
+  alignerDetailId String
+
+  @@map("IPR_DETAIL")
+}
+
+
+model BraceDetail {
+  id                   String          @id @default(cuid())
+  treatmentPlanId      String          @unique
+  treatmentType        String // "new treatment" | "ongoing treatment"
+  startDate            DateTime
+  durationInMonths     Int
+  extractUpperJawTeeth Json?
+  extractLowerJawTeeth Json?
+  finalAlignerTable    Json
+  bracketMaterial      BracketMaterial
+  bracketType          BracketType
+  bracketSubType    BracketSubType?
+  anchorageUpperJaw    Json?
+  anchorageLowerJaw    Json?
+  remarks              String?
+  prescriptions        Json
+
+  treatmentPlan TreatmentPlan @relation(fields: [treatmentPlanId], references: [id])
+
+  @@map("BRACE_DETAIL")
+}
+
+model PatientPrescription {
+  id           String   @id @default(cuid())
+  templateId   String
+  medicine     String // JSON string or comma-separated medicine IDs
+  treatmentId  String?
+  dosage       String?
+  duration     String?
+  notes        String?
+  prescribedAt DateTime @default(now())
+  updatedOn    DateTime @updatedAt
+
+  // Relations
+  template  RxTemplate @relation(fields: [templateId], references: [id])
+  treatment Treatment? @relation(fields: [treatmentId], references: [id])
+
+  @@map("PATIENT_PRESCRIPTIONS")
+}
+
+model Payment {
+  id             String        @id @default(cuid())
+  treatmentId    String
+  payAmount      Float
+  paymentMode    PaymentMode
+  paymentStatus  PaymentStatus
+  discountAmount Float?
+  duePayment     Float?
+  createdOn      DateTime      @default(now())
+  updatedOn      DateTime      @updatedAt
+
+  // Relations
+  treatment Treatment @relation(fields: [treatmentId], references: [id])
+
+  @@map("PAYMENT")
+}
+
+model Appointment {
+  id              String            @id @default(cuid())
+  appointmentDate DateTime
+  userId          String
+  clinicId        String
+  slotId          String
+  status          AppointmentStatus @default(SCHEDULED)
+  createdOn       DateTime          @default(now())
+  updatedOn       DateTime          @updatedAt
+
+  // Relations
+  user   User   @relation(fields: [userId], references: [id])
+  clinic Clinic @relation(fields: [clinicId], references: [id])
+  slot   Slot   @relation(fields: [slotId], references: [id])
+
+  @@map("APPOINTMENT")
+}
+
+model Notification {
+  id        String           @id @default(cuid())
+  patientId String
+  type      NotificationType
+  content   String
+  sendAt    DateTime
+  createdOn DateTime         @default(now())
+  updatedOn DateTime         @updatedAt
+
+  // Relations
+  patient Patient @relation(fields: [patientId], references: [id])
+
+  @@map("NOTIFICATION")
+}
+
+model EducationalVideo {
+  id          String   @id @default(cuid())
+  title       String
+  description String
+  category    VideoCategory
+  video       String
+  clinicId    String
+  createdOn   DateTime @default(now())
+  updatedOn   DateTime @updatedAt
+
+  // Relations
+  clinic Clinic @relation(fields: [clinicId], references: [id])
+
+  @@map("EDUCATIONAL_VIDEO")
+}
+
+model Medicine {
+  id        String   @id @default(cuid())
+  name      String
+  dosage    Float
+  frequency Int
+  createdOn DateTime @default(now())
+  updatedOn DateTime @updatedAt
+
+  @@map("MEDICINE")
+}
+
+model Document {
+  id                 String   @id @default(cuid())
+  treatmentId        String
+  beforeImage        String
+  afterImage         String?
+  medicalDocumentPdf String
+  createdOn          DateTime @default(now())
+  updatedOn          DateTime @updatedAt
+
+  // Relations
+  treatment Treatment @relation(fields: [treatmentId], references: [id])
+
+  @@map("DOCUMENT")
+}
+
+model RxTemplate {
+  id               String   @id @default(cuid())
+  prescriptionName String // Add the prescription name field
+  medication       Json
+  description      String? // Make description nullable
+  duration         String?
+  notes            String
+  dosage           String?
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+  createdBy        String
+
+  // Relations
+  prescriptions PatientPrescription[]
+
+  @@map("RX_TEMPLATE")
+}
+
+// Enums
+enum Role {
+  DOCTOR
+  ADMIN
+}
+
+enum PaymentMode {
+  CASH
+  ONLINE
+}
+
+enum PaymentStatus {
+  PENDING
+  COMPLETED
+  FAILED
+  REFUNDED
+}
+
+enum AppointmentStatus {
+  SCHEDULED
+  COMPLETED
+  CANCELLED
+}
+
+enum NotificationType {
+  APPOINTMENT_REMINDER
+  PAYMENT_CONFIRMATION
+  GREETING
+  THANK_YOU
+}
+
+enum DayOfWeek {
+  Sun
+  Mon
+  Tue
+  Wed
+  Thu
+  Fri
+  Sat
+}
+
+
+// Extra Oral - Frontal
+enum FacialForm {
+  MESO
+  LEPTO
+  EURY
+}
+
+enum FacialSymmetry {
+  SYMMETRIC
+  ASYMMETRIC
+}
+
+enum LipPosture {
+  COMPETENT
+  POTENTIALLY_INCOMPETENT
+  INCOMPETENT
+  EVERTED
+}
+
+// Extra Oral - Profile
+enum FacialProfile {
+  NORMAL
+  CONVEX
+  FLAT
+  CONCAVE
+}
+
+enum LipProtrusion {
+  PRESENT
+  ABSENT
+}
+
+enum FacialDivergence {
+  STRAIGHT
+  ANTERIOR
+  POSTERIOR
+}
+
+enum NasolabialAngle {
+  NORMAL
+  ACUTE
+  OBTUSE
+}
+
+enum NoseSize {
+  SMALL
+  NORMAL
+  LARGE
+}
+
+enum MentolabialSulcus {
+  SHALLOW
+  NORMAL
+  DEEP
+}
+
+enum ChinType {
+  NORMAL
+  DEFICIENT
+  PROMINENT
+}
+
+// Intra Oral
+enum OralHygieneStatus {
+  GOOD
+  AVERAGE
+  POOR
+}
+
+enum TongueSize {
+  SMALL
+  NORMAL
+  LARGE
+}
+
+enum TonsilCondition {
+  NORMAL
+  HYPERTROPHIED
+}
+
+enum FrenumType {
+  NORMAL
+  HIGH
+}
+
+enum CrossbiteStatus {
+  PRESENT
+  ABSENT
+}
+
+// Functional
+enum VTO {
+  POSITIVE
+  NEGATIVE
+}
+
+enum TreatmentType {
+  EXTRACTION
+  NON_EXTRACTION
+}
+
+enum TreatmentPlanType {
+  ALIGNER
+  BRACES
+}
+
+enum BracketMaterial {
+  METAL
+  AESTHETIC
+}
+
+enum BracketType {
+  PRE_ADJUSTED
+  SELF_LIGATING
+  LINGUAL
+}
+
+enum BracketSubType {
+  TYPE_018 @map("0.018")
+  TYPE_022 @map("0.022")
+}
+
+enum AnchorageType {
+  BANDING_2ND_MOLAR
+  TPA
+  NANCE_PALATAL_ARCH
+}
+
+enum VideoCategory {
+  BRACES
+  ALIGNERS
+  PROCEDURES
+  DENTAL_CARE
+  RECOMMENDATIONS
+}
+
+enum PatientObservation {
+  GOOD_ORAL_HYGIENE
+  FAIR_ORAL_HYGIENE
+  POOR_ORAL_HYGIENE
+  NORMAL_ALIGNMENT
+  CROWDING
+  SPACING
+  OVERBITE
+  UNDERBITE
+  OPEN_BITE
+  CROSSBITE
+  DEEP_BITE
+  ASYMMETRY_PRESENT
+  ASYMMETRY_ABSENT
+  LIP_COMPETENT
+  LIP_INCOMPETENT
+  NORMAL_SPEECH
+  LISP
+  NASAL_SPEECH
+  DELAYED_TOOTH_ERUPTION
+  MIXED_DENTITION
+}

@@ -1,0 +1,25 @@
+{
+  "type": "BRACES",
+  "patientId": "cmdwqe7u70006r9o1099ya664",
+  "treatmentId": "cmdwr7uvu0008r9o1ad2m5h58",
+  "bracesDetails": {
+    "treatmentType": "new treatment",
+    "startDate": "2025-08-13",
+    "durationInMonths": 12,
+    "extractUpperJawTeeth": [1, 2],
+    "extractLowerJawTeeth": [31, 17],
+    "finalAlignerTable": [],
+    "bracketMaterial": "METAL",
+    "bracketType": "PRE_ADJUSTED", 
+    "bracketSubType": "TYPE_018",
+    "anchorageUpperJaw": ["TPA", "NANCE_PALATAL_ARCH"],
+    "anchorageLowerJaw": ["TPA"],
+    "remarks": "Patient requires careful monitoring",
+    "prescriptions": [
+      {
+        "rxTemplateId": "cme2ov5ld0000r9ks1rq0inyx",
+        "medications": ["Dolo 500mg", "Paracetamol"]
+      }
+    ]
+  }
+}
