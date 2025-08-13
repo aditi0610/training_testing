@@ -1,0 +1,19 @@
+{
+  "type": "ALIGNER",
+  "patientId": "cmdwqe7u70006r9o1099ya664",
+  "treatmentId": "cmdwr7uvu0008r9o1ad2m5h58",
+  "alignerDetails": {
+    "planName": "Advanced Treatment Plan",
+    "daysToWearEachAligner": 7,
+    "recommendedDailyHours": 22,
+    "upperJawOptions": [1, 2, 3],
+    "lowerJawOptions": [17, 18, 19],
+    "finalAlignerTable": [],
+    "prescriptions": [
+      {
+        "rxTemplateId": "cme2ov5ld0000r9ks1rq0inyx",
+        "medications": ["Dolo 500mg", "Paracetamol"]
+      }
+    ]
+  }
+}
